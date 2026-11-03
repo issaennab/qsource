@@ -25,3 +25,5 @@ coverage/
 *.mv.db
 data/
 services/api/data/
+
+.venv/

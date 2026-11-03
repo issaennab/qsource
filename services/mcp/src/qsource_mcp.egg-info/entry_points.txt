@@ -1,0 +1,2 @@
+[console_scripts]
+qsource-mcp = qsource_mcp.server:main

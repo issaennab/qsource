@@ -1,0 +1,59 @@
+Metadata-Version: 2.4
+Name: qsource-mcp
+Version: 0.1.0
+Summary: MCP server for QSource — agent access to versioned features and tasks
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: mcp>=1.2.0
+Requires-Dist: httpx>=0.27.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+
+# QSource MCP (Phase 2)
+
+Model Context Protocol server that wraps the QSource HTTP API so coding agents can read project context and publish attributed revisions.
+
+## Tools
+
+| Tool | Purpose |
+|------|---------|
+| `list_projects` | List projects |
+| `get_project_board` | Roadmap, features, tasks, activity for a project |
+| `get_feature` | Current accepted feature revision + content |
+| `list_feature_revisions` | Immutable history for a feature |
+| `publish_feature_revision` | Publish a new feature revision |
+| `list_tasks` | Tasks on a project board (optional feature filter) |
+| `publish_task_revision` | Publish a new task revision |
+| `add_feature_comment` | Non-authoritative comment |
+
+## Run (stdio — for Cursor / Claude Desktop)
+
+```bash
+cd services/mcp
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+export QSOURCE_API_BASE_URL=http://localhost:8095
+export QSOURCE_ACTOR_NAME=mcp-agent
+export QSOURCE_ACTOR_SOURCE=agent
+qsource-mcp
+```
+
+## Cursor MCP config example
+
+```json
+{
+  "mcpServers": {
+    "qsource": {
+      "command": "/Users/issaennab/dev/work/workspace/qsource/services/mcp/.venv/bin/qsource-mcp",
+      "env": {
+        "QSOURCE_API_BASE_URL": "http://localhost:8095",
+        "QSOURCE_ACTOR_NAME": "cursor-agent",
+        "QSOURCE_ACTOR_SOURCE": "agent"
+      }
+    }
+  }
+}
+```
+
+Requires the Java API running on port 8095.

@@ -14,7 +14,8 @@ Solo builders and small product/engineering teams who want a shared source of tr
 |-------|------|
 | API | Java 17, Spring Boot 3, JPA, H2 (local) / Postgres-ready |
 | Web | React, TypeScript, Vite |
-| Later | React Native + TestFlight, Python MCP, JWT auth |
+| MCP | Python MCP wrapping the HTTP API |
+| Later | React Native + TestFlight, JWT auth |
 
 > **Auth:** none in v1 (keeps testing simple). Pass `X-Actor-Name` and `X-Actor-Source` so every revision stays attributable. JWT/OAuth is on the roadmap.
 
@@ -24,6 +25,7 @@ Solo builders and small product/engineering teams who want a shared source of tr
 qsource/
 ├── apps/web          # React web console
 ├── services/api      # Spring Boot API
+├── services/mcp      # Python MCP for agents
 ├── docs/             # Architecture + API notes
 ├── LICENSE           # MIT
 └── ROADMAP.md        # Planned work (≥20h)
@@ -51,11 +53,20 @@ npm run dev
 
 Use the top-bar **Acting as** / **Source** controls to publish as a human or agent.
 
+### MCP (agents)
+
+```bash
+cd services/mcp
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
+qsource-mcp   # stdio; see services/mcp/README.md for Cursor config
+```
+
 ### Tests
 
 ```bash
-cd services/api
-./gradlew test
+cd services/api && ./gradlew test
+cd services/mcp && source .venv/bin/activate && pytest
 ```
 
 ## License

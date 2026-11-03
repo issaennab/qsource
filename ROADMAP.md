@@ -16,7 +16,7 @@ Work ahead for Phase 1 completion and Phase 2 (well over 20 hours).
 ## Next (Phase 2)
 
 - [ ] React Native app + TestFlight
-- [ ] Python MCP server (`get_feature`, `propose_revision`, `list_tasks`)
+- [x] Python MCP server (`get_feature`, `publish_feature_revision`, `list_tasks`, …)
 - [ ] Decision records linked to features
 - [ ] Webhooks for revision published
 - [ ] Fine-grained RBAC (read / propose / publish)
