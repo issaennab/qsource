@@ -1,17 +1,22 @@
 package com.qsource.api.config;
 
 import com.qsource.api.domain.RevisionSource;
+import com.qsource.api.security.AuthPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class ActorFilter extends OncePerRequestFilter {
-    public static final String NAME_HEADER = "X-Actor-Name";
     public static final String SOURCE_HEADER = "X-Actor-Source";
 
     @Override
@@ -19,10 +24,6 @@ public class ActorFilter extends OncePerRequestFilter {
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
-            String name = request.getHeader(NAME_HEADER);
-            if (name == null || name.isBlank()) {
-                name = "anonymous";
-            }
             RevisionSource source = RevisionSource.API;
             String rawSource = request.getHeader(SOURCE_HEADER);
             if (rawSource != null && !rawSource.isBlank()) {
@@ -32,7 +33,20 @@ public class ActorFilter extends OncePerRequestFilter {
                     source = RevisionSource.API;
                 }
             }
-            ActorContext.set(new Actor(name.trim(), source));
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null
+                    && authentication.isAuthenticated()
+                    && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+                if (principal.apiKey()) {
+                    source = RevisionSource.AGENT;
+                } else if (source == RevisionSource.API && "web".equalsIgnoreCase(rawSource)) {
+                    source = RevisionSource.WEB;
+                }
+                ActorContext.set(new Actor(principal.displayName(), source, principal.userId()));
+            } else {
+                ActorContext.set(Actor.anonymous());
+            }
             filterChain.doFilter(request, response);
         } finally {
             ActorContext.clear();

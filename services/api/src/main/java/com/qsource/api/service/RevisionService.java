@@ -37,6 +37,7 @@ public class RevisionService {
         revision.setContentJson(jsonMaps.write(content));
         revision.setMessage(message == null || message.isBlank() ? "Update" : message);
         revision.setActorName(actor.name());
+        revision.setActorUserId(actor.userId());
         revision.setSource(actor.source());
         revision.setParentRevisionId(parentId);
         revision.setAccepted(true);

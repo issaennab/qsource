@@ -23,6 +23,8 @@ public class ActivityEvent {
     @Column(nullable = false)
     private String actorName;
 
+    private UUID actorUserId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RevisionSource source;
@@ -42,6 +44,8 @@ public class ActivityEvent {
     public void setSummary(String summary) { this.summary = summary; }
     public String getActorName() { return actorName; }
     public void setActorName(String actorName) { this.actorName = actorName; }
+    public UUID getActorUserId() { return actorUserId; }
+    public void setActorUserId(UUID actorUserId) { this.actorUserId = actorUserId; }
     public RevisionSource getSource() { return source; }
     public void setSource(RevisionSource source) { this.source = source; }
     public UUID getRelatedId() { return relatedId; }

@@ -17,7 +17,7 @@ Solo builders and small product/engineering teams who want a shared source of tr
 | MCP | Python MCP wrapping the HTTP API |
 | Later | React Native + TestFlight, JWT auth |
 
-> **Auth:** none in v1 (keeps testing simple). Pass `X-Actor-Name` and `X-Actor-Source` so every revision stays attributable. JWT/OAuth is on the roadmap.
+> **Auth:** email/password + JWT. Multi-company orgs, groups, restricted projects, and org tags. Agents authenticate with `X-Api-Key` (or a user JWT). Revisions stay attributable via authenticated actor + `X-Actor-Source`.
 
 ## Monorepo layout
 
@@ -51,7 +51,7 @@ npm run dev
 # http://localhost:5173  (proxies /api → :8095)
 ```
 
-Use the top-bar **Acting as** / **Source** controls to publish as a human or agent.
+Seeded login (when `qsource.seed=true`): **demo@qsource.local** / **demo1234**.
 
 ### MCP (agents)
 
@@ -59,6 +59,7 @@ Use the top-bar **Acting as** / **Source** controls to publish as a human or age
 cd services/mcp
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
+export QSOURCE_API_KEY=qs_your_key_here   # create via POST /api/orgs/{orgId}/api-keys
 qsource-mcp   # stdio; see services/mcp/README.md for Cursor config
 ```
 

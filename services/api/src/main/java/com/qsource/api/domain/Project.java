@@ -20,6 +20,10 @@ public class Project {
     @Column(length = 2000)
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProjectVisibility visibility = ProjectVisibility.ORG;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -31,6 +35,8 @@ public class Project {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public ProjectVisibility getVisibility() { return visibility; }
+    public void setVisibility(ProjectVisibility visibility) { this.visibility = visibility; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

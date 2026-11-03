@@ -1,37 +1,20 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
-export type Actor = { name: string; source: 'web' | 'api' | 'agent' }
+const ACCESS_KEY = 'qsource_access_token'
+const REFRESH_KEY = 'qsource_refresh_token'
+const ORG_KEY = 'qsource_org_id'
 
-const defaultActor: Actor = { name: 'sarah', source: 'web' }
-
-let actor: Actor = { ...defaultActor }
-
-export function getActor() {
-  return actor
-}
-
-export function setActor(next: Partial<Actor>) {
-  actor = { ...actor, ...next }
-}
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'application/json')
-  headers.set('X-Actor-Name', actor.name)
-  headers.set('X-Actor-Source', actor.source)
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || res.statusText)
-  }
-  return res.json() as Promise<T>
-}
+export type User = { id: string; email: string; displayName: string; createdAt: string }
+export type OrgMembership = { organizationId: string; name: string; slug: string; role: string }
+export type Org = { id: string; name: string; slug: string; createdAt: string }
+export type Tag = { id: string; organizationId: string; name: string; color?: string; createdAt: string }
 
 export type Project = {
   id: string
   organizationId: string
   name: string
   description?: string
+  visibility: 'ORG' | 'RESTRICTED'
   createdAt: string
 }
 
@@ -50,6 +33,7 @@ export type FeatureSummary = {
   title: string
   currentRevisionId?: string
   updatedAt: string
+  tags?: Tag[]
 }
 
 export type TaskSummary = {
@@ -60,6 +44,7 @@ export type TaskSummary = {
   status: string
   currentRevisionId?: string
   updatedAt: string
+  tags?: Tag[]
 }
 
 export type Activity = {
@@ -79,6 +64,7 @@ export type Board = {
   features: FeatureSummary[]
   tasks: TaskSummary[]
   activity: Activity[]
+  orgTags?: Tag[]
 }
 
 export type FeatureDetail = FeatureSummary & {
@@ -112,11 +98,148 @@ export type Comment = {
   createdAt: string
 }
 
+export type Group = {
+  id: string
+  organizationId: string
+  name: string
+  createdAt: string
+  memberIds: string[]
+}
+
+export type AuthTokens = {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  user: User
+}
+
+export function getAccessToken() {
+  return localStorage.getItem(ACCESS_KEY)
+}
+
+export function getRefreshToken() {
+  return localStorage.getItem(REFRESH_KEY)
+}
+
+export function getSelectedOrgId() {
+  return localStorage.getItem(ORG_KEY)
+}
+
+export function setSelectedOrgId(orgId: string) {
+  localStorage.setItem(ORG_KEY, orgId)
+}
+
+export function clearSession() {
+  localStorage.removeItem(ACCESS_KEY)
+  localStorage.removeItem(REFRESH_KEY)
+}
+
+function storeTokens(tokens: AuthTokens) {
+  localStorage.setItem(ACCESS_KEY, tokens.accessToken)
+  localStorage.setItem(REFRESH_KEY, tokens.refreshToken)
+}
+
+async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+  const headers = new Headers(init.headers)
+  headers.set('Content-Type', 'application/json')
+  headers.set('X-Actor-Source', 'web')
+  const token = getAccessToken()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
+  if (res.status === 401 && retry && getRefreshToken() && !path.startsWith('/api/auth/')) {
+    const refreshed = await api.refresh({ refreshToken: getRefreshToken()! }).catch(() => null)
+    if (refreshed) {
+      storeTokens(refreshed)
+      return request<T>(path, init, false)
+    }
+    clearSession()
+  }
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || res.statusText)
+  }
+  if (res.status === 204) {
+    return undefined as T
+  }
+  return res.json() as Promise<T>
+}
+
 export const api = {
-  listProjects: () => request<Project[]>('/api/projects'),
-  createProject: (body: { name: string; description?: string }) =>
-    request<Project>('/api/projects', { method: 'POST', body: JSON.stringify(body) }),
-  board: (projectId: string) => request<Board>(`/api/projects/${projectId}/board`),
+  signup: async (body: {
+    email: string
+    password: string
+    displayName: string
+    organizationName: string
+  }) => {
+    const tokens = await request<AuthTokens>('/api/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }, false)
+    storeTokens(tokens)
+    return tokens
+  },
+  login: async (body: { email: string; password: string }) => {
+    const tokens = await request<AuthTokens>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }, false)
+    storeTokens(tokens)
+    return tokens
+  },
+  refresh: (body: { refreshToken: string }) =>
+    request<AuthTokens>('/api/auth/refresh', { method: 'POST', body: JSON.stringify(body) }, false),
+  logout: async () => {
+    const refreshToken = getRefreshToken()
+    if (refreshToken) {
+      try {
+        await request<void>('/api/auth/logout', {
+          method: 'POST',
+          body: JSON.stringify({ refreshToken }),
+        }, false)
+      } catch {
+        /* ignore */
+      }
+    }
+    clearSession()
+  },
+  me: () => request<{ user: User; organizations: OrgMembership[] }>('/api/me'),
+  listOrgs: () => request<Org[]>('/api/orgs'),
+  listOrgProjects: (orgId: string) => request<Project[]>(`/api/orgs/${orgId}/projects`),
+  createOrgProject: (
+    orgId: string,
+    body: { name: string; description?: string; visibility?: 'ORG' | 'RESTRICTED' },
+  ) =>
+    request<Project>(`/api/orgs/${orgId}/projects`, { method: 'POST', body: JSON.stringify(body) }),
+  updateProject: (
+    projectId: string,
+    body: { name?: string; description?: string; visibility?: 'ORG' | 'RESTRICTED' },
+  ) =>
+    request<Project>(`/api/projects/${projectId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  listGroups: (orgId: string) => request<Group[]>(`/api/orgs/${orgId}/groups`),
+  createGroup: (orgId: string, name: string) =>
+    request<Group>(`/api/orgs/${orgId}/groups`, { method: 'POST', body: JSON.stringify({ name }) }),
+  replaceProjectAccess: (
+    projectId: string,
+    principals: { type: 'USER' | 'GROUP'; id: string; permission: 'READ' | 'WRITE' }[],
+  ) =>
+    request(`/api/projects/${projectId}/access`, {
+      method: 'PUT',
+      body: JSON.stringify({ principals }),
+    }),
+  listTags: (orgId: string) => request<Tag[]>(`/api/orgs/${orgId}/tags`),
+  createTag: (orgId: string, body: { name: string; color?: string }) =>
+    request<Tag>(`/api/orgs/${orgId}/tags`, { method: 'POST', body: JSON.stringify(body) }),
+  setFeatureTags: (featureId: string, tagIds: string[]) =>
+    request<Tag[]>(`/api/features/${featureId}/tags`, {
+      method: 'PUT',
+      body: JSON.stringify({ tagIds }),
+    }),
+  board: (projectId: string, tagId?: string) =>
+    request<Board>(
+      `/api/projects/${projectId}/board${tagId ? `?tagId=${encodeURIComponent(tagId)}` : ''}`,
+    ),
   getFeature: (id: string) => request<FeatureDetail>(`/api/features/${id}`),
   featureHistory: (id: string) => request<Revision[]>(`/api/features/${id}/revisions`),
   publishFeature: (

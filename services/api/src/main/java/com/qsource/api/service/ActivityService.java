@@ -23,6 +23,7 @@ public class ActivityService {
         event.setKind(kind);
         event.setSummary(summary);
         event.setActorName(actor.name());
+        event.setActorUserId(actor.userId());
         event.setSource(actor.source());
         event.setRelatedId(relatedId);
         activityEventRepository.save(event);

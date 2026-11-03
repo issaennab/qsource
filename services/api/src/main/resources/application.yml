@@ -29,3 +29,7 @@ management:
 
 qsource:
   seed: ${QSOURCE_SEED:true}
+  jwt:
+    secret: ${QSOURCE_JWT_SECRET:qsource-dev-secret-change-me-please-32chars-min}
+    access-ttl-minutes: ${QSOURCE_JWT_ACCESS_TTL:60}
+    refresh-ttl-days: ${QSOURCE_JWT_REFRESH_TTL:30}

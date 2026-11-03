@@ -34,6 +34,8 @@ public class Revision {
     @Column(nullable = false)
     private String actorName;
 
+    private UUID actorUserId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RevisionSource source;
@@ -60,6 +62,8 @@ public class Revision {
     public void setMessage(String message) { this.message = message; }
     public String getActorName() { return actorName; }
     public void setActorName(String actorName) { this.actorName = actorName; }
+    public UUID getActorUserId() { return actorUserId; }
+    public void setActorUserId(UUID actorUserId) { this.actorUserId = actorUserId; }
     public RevisionSource getSource() { return source; }
     public void setSource(RevisionSource source) { this.source = source; }
     public UUID getParentRevisionId() { return parentRevisionId; }

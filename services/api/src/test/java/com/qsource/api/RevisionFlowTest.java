@@ -28,24 +28,44 @@ class RevisionFlowTest {
 
     @Test
     void createFeatureAndPublishRevision() throws Exception {
-        MvcResult projectResult = mockMvc.perform(post("/api/projects")
-                        .header("X-Actor-Name", "tester")
+        MvcResult signup = mockMvc.perform(post("/api/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email":"tester@example.com",
+                                  "password":"password123",
+                                  "displayName":"Tester",
+                                  "organizationName":"Acme"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode auth = mapper.readTree(signup.getResponse().getContentAsString());
+        String token = auth.get("accessToken").asText();
+
+        MvcResult orgs = mockMvc.perform(get("/api/orgs").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+        String orgId = mapper.readTree(orgs.getResponse().getContentAsString()).get(0).get("id").asText();
+
+        MvcResult projectResult = mockMvc.perform(post("/api/orgs/" + orgId + "/projects")
+                        .header("Authorization", "Bearer " + token)
                         .header("X-Actor-Source", "web")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Test\",\"description\":\"d\"}"))
+                        .content("{\"name\":\"Test\",\"description\":\"d\",\"visibility\":\"ORG\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         String projectId = mapper.readTree(projectResult.getResponse().getContentAsString()).get("id").asText();
 
         MvcResult featureResult = mockMvc.perform(post("/api/projects/" + projectId + "/features")
-                        .header("X-Actor-Name", "tester")
+                        .header("Authorization", "Bearer " + token)
                         .header("X-Actor-Source", "web")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "title":"Auth later",
                                   "outcome":"Users can sign in",
-                                  "requirements":"JWT later",
+                                  "requirements":"JWT",
                                   "successCriteria":"Login works",
                                   "changeMessage":"v1"
                                 }
@@ -57,14 +77,14 @@ class RevisionFlowTest {
         assertThat(feature.get("currentContent").get("title").asText()).isEqualTo("Auth later");
 
         mockMvc.perform(post("/api/features/" + featureId + "/revisions")
-                        .header("X-Actor-Name", "agent-1")
+                        .header("Authorization", "Bearer " + token)
                         .header("X-Actor-Source", "agent")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "title":"Auth later",
                                   "outcome":"Users can sign in",
-                                  "requirements":"JWT later; actor headers for now",
+                                  "requirements":"JWT; actor attribution",
                                   "successCriteria":"Login works",
                                   "changeMessage":"agent notes"
                                 }
@@ -72,13 +92,13 @@ class RevisionFlowTest {
                 .andExpect(status().isOk());
 
         MvcResult history = mockMvc.perform(get("/api/features/" + featureId + "/revisions")
-                        .header("X-Actor-Name", "tester"))
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode revisions = mapper.readTree(history.getResponse().getContentAsString());
         assertThat(revisions).hasSize(2);
         assertThat(revisions.get(0).get("version").asInt()).isEqualTo(2);
-        assertThat(revisions.get(0).get("actorName").asText()).isEqualTo("agent-1");
+        assertThat(revisions.get(0).get("actorName").asText()).isEqualTo("Tester");
         assertThat(revisions.get(0).get("source").asText()).isEqualTo("AGENT");
     }
 }

@@ -24,6 +24,8 @@ public class Comment {
     @Column(nullable = false)
     private String actorName;
 
+    private UUID actorUserId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RevisionSource source = RevisionSource.WEB;
@@ -41,6 +43,8 @@ public class Comment {
     public void setBody(String body) { this.body = body; }
     public String getActorName() { return actorName; }
     public void setActorName(String actorName) { this.actorName = actorName; }
+    public UUID getActorUserId() { return actorUserId; }
+    public void setActorUserId(UUID actorUserId) { this.actorUserId = actorUserId; }
     public RevisionSource getSource() { return source; }
     public void setSource(RevisionSource source) { this.source = source; }
     public Instant getCreatedAt() { return createdAt; }

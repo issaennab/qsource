@@ -18,17 +18,32 @@ public class ProjectController {
 
     @GetMapping("/projects")
     public List<ProjectResponse> listProjects() {
-        return projectService.listProjects();
-    }
-
-    @PostMapping("/projects")
-    public ProjectResponse createProject(@Valid @RequestBody CreateProjectRequest request) {
-        return projectService.createProject(request);
+        return projectService.listVisibleProjects();
     }
 
     @GetMapping("/projects/{projectId}/board")
-    public ProjectBoardResponse board(@PathVariable UUID projectId) {
-        return projectService.board(projectId);
+    public ProjectBoardResponse board(
+            @PathVariable UUID projectId,
+            @RequestParam(required = false) UUID tagId,
+            @RequestParam(required = false) String tag) {
+        return projectService.board(projectId, tagId, tag);
+    }
+
+    @PatchMapping("/projects/{projectId}")
+    public ProjectResponse updateProject(
+            @PathVariable UUID projectId, @Valid @RequestBody UpdateProjectRequest request) {
+        return projectService.updateProject(projectId, request);
+    }
+
+    @GetMapping("/projects/{projectId}/access")
+    public List<ProjectAccessResponse> listAccess(@PathVariable UUID projectId) {
+        return projectService.listAccess(projectId);
+    }
+
+    @PutMapping("/projects/{projectId}/access")
+    public List<ProjectAccessResponse> replaceAccess(
+            @PathVariable UUID projectId, @Valid @RequestBody ReplaceProjectAccessRequest request) {
+        return projectService.replaceAccess(projectId, request);
     }
 
     @PostMapping("/projects/{projectId}/roadmap")

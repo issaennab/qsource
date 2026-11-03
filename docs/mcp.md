@@ -1,5 +1,9 @@
-# QSource MCP (Phase 2)
+# QSource MCP
 
-Agents talk to QSource through this MCP server, which calls the Java API with `X-Actor-Source: agent`.
+Agents talk to QSource through this MCP server.
 
-See [services/mcp/README.md](../services/mcp/README.md) for install, tools, and Cursor config.
+**Auth:** set `QSOURCE_API_KEY` (preferred) or `QSOURCE_ACCESS_TOKEN`. Unsigned actor-name headers are not sufficient in SaaS mode.
+
+**Tools include** list/read board, `create_feature` / `create_task`, publish revisions, and feature comments.
+
+Install, Cursor wiring, smoke steps: [services/mcp/README.md](../services/mcp/README.md).

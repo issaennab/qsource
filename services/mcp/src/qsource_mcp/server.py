@@ -36,6 +36,50 @@ def get_feature(feature_id: str) -> str:
 
 
 @mcp.tool()
+def create_feature(
+    project_id: str,
+    title: str,
+    outcome: str = "",
+    requirements: str = "",
+    success_criteria: str = "",
+    change_message: str = "Initial revision",
+) -> str:
+    """Create a feature under a project with an initial revision."""
+    return _dump(
+        client.create_feature(
+            project_id,
+            title=title,
+            outcome=outcome,
+            requirements=requirements,
+            success_criteria=success_criteria,
+            change_message=change_message,
+        )
+    )
+
+
+@mcp.tool()
+def create_task(
+    project_id: str,
+    title: str,
+    feature_id: str | None = None,
+    description: str = "",
+    status: str = "TODO",
+    change_message: str = "Initial revision",
+) -> str:
+    """Create a task under a project (optionally linked to a feature). status: TODO | IN_PROGRESS | DONE | CANCELLED."""
+    return _dump(
+        client.create_task(
+            project_id,
+            title=title,
+            feature_id=feature_id,
+            description=description,
+            status=status,
+            change_message=change_message,
+        )
+    )
+
+
+@mcp.tool()
 def list_feature_revisions(feature_id: str) -> str:
     """List immutable revision history for a feature (newest first)."""
     return _dump(client.list_feature_revisions(feature_id))

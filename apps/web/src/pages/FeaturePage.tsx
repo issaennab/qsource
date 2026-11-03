@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type Comment, type FeatureDetail, type Revision } from '../api/client'
+import { api, type Comment, type FeatureDetail, type Revision, type Tag } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 
 export function FeaturePage() {
   const { featureId = '' } = useParams()
+  const { orgId } = useAuth()
   const [feature, setFeature] = useState<FeatureDetail | null>(null)
   const [history, setHistory] = useState<Revision[]>([])
   const [comments, setComments] = useState<Comment[]>([])
+  const [orgTags, setOrgTags] = useState<Tag[]>([])
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [title, setTitle] = useState('')
   const [outcome, setOutcome] = useState('')
   const [requirements, setRequirements] = useState('')
@@ -26,10 +30,14 @@ export function FeaturePage() {
       setFeature(f)
       setHistory(h)
       setComments(c)
+      setSelectedTagIds((f.tags ?? []).map((t) => t.id))
       setTitle(f.currentContent?.title ?? f.title)
       setOutcome(String(f.currentContent?.outcome ?? ''))
       setRequirements(String(f.currentContent?.requirements ?? ''))
       setSuccessCriteria(String(f.currentContent?.successCriteria ?? ''))
+      if (orgId) {
+        setOrgTags(await api.listTags(orgId))
+      }
       setError('')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load feature')
@@ -38,7 +46,13 @@ export function FeaturePage() {
 
   useEffect(() => {
     void load()
-  }, [featureId])
+  }, [featureId, orgId])
+
+  async function saveTags(e: React.FormEvent) {
+    e.preventDefault()
+    await api.setFeatureTags(featureId, selectedTagIds)
+    await load()
+  }
 
   async function publish(e: React.FormEvent) {
     e.preventDefault()
@@ -84,6 +98,7 @@ export function FeaturePage() {
       </div>
       {error && <p className="error">{error}</p>}
       <div className="split">
+        <div className="stack">
         <form className="panel stack" onSubmit={publish}>
           <h2>Current working view</h2>
           <label>Title<input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
@@ -93,6 +108,31 @@ export function FeaturePage() {
           <label>Change message (required to publish)<input value={changeMessage} onChange={(e) => setChangeMessage(e.target.value)} placeholder="What changed and why?" /></label>
           <button className="btn" type="submit" disabled={saving}>{saving ? 'Publishing…' : 'Publish revision'}</button>
         </form>
+        <form className="panel stack" onSubmit={saveTags}>
+          <h2>Tags</h2>
+          <div className="list">
+            {orgTags.map((t) => {
+              const checked = selectedTagIds.includes(t.id)
+              return (
+                <label key={t.id} className="item" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      setSelectedTagIds((prev) =>
+                        e.target.checked ? [...prev, t.id] : prev.filter((id) => id !== t.id),
+                      )
+                    }}
+                  />
+                  <span>{t.name}</span>
+                </label>
+              )
+            })}
+            {orgTags.length === 0 && <p className="meta">Create tags on the project board first.</p>}
+          </div>
+          <button className="btn secondary" type="submit">Save tags</button>
+        </form>
+        </div>
         <div className="stack">
           <section className="panel">
             <h2>History</h2>

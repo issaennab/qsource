@@ -1,26 +1,37 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type Board } from '../api/client'
+import { api, type Board, type Group, type Tag } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 
 export function ProjectPage() {
   const { projectId = '' } = useParams()
+  const { orgId } = useAuth()
   const [board, setBoard] = useState<Board | null>(null)
+  const [groups, setGroups] = useState<Group[]>([])
   const [error, setError] = useState('')
   const [featureTitle, setFeatureTitle] = useState('')
   const [taskTitle, setTaskTitle] = useState('')
+  const [tagFilter, setTagFilter] = useState('')
+  const [newTag, setNewTag] = useState('')
+  const [newGroup, setNewGroup] = useState('')
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
 
-  async function load() {
+  async function load(tagId?: string) {
     try {
-      setBoard(await api.board(projectId))
+      const next = await api.board(projectId, tagId || undefined)
+      setBoard(next)
       setError('')
+      if (orgId) {
+        setGroups(await api.listGroups(orgId))
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load board')
     }
   }
 
   useEffect(() => {
-    void load()
-  }, [projectId])
+    void load(tagFilter)
+  }, [projectId, orgId, tagFilter])
 
   async function addFeature(e: React.FormEvent) {
     e.preventDefault()
@@ -33,7 +44,7 @@ export function ProjectPage() {
       changeMessage: 'Initial revision',
     })
     setFeatureTitle('')
-    await load()
+    await load(tagFilter)
   }
 
   async function addTask(e: React.FormEvent) {
@@ -41,7 +52,49 @@ export function ProjectPage() {
     if (!taskTitle.trim()) return
     await api.createTask(projectId, { title: taskTitle.trim(), status: 'TODO', changeMessage: 'Initial task' })
     setTaskTitle('')
-    await load()
+    await load(tagFilter)
+  }
+
+  async function createTag(e: React.FormEvent) {
+    e.preventDefault()
+    if (!orgId || !newTag.trim()) return
+    await api.createTag(orgId, { name: newTag.trim() })
+    setNewTag('')
+    await load(tagFilter)
+  }
+
+  async function createGroup(e: React.FormEvent) {
+    e.preventDefault()
+    if (!orgId || !newGroup.trim()) return
+    await api.createGroup(orgId, newGroup.trim())
+    setNewGroup('')
+    setGroups(await api.listGroups(orgId))
+  }
+
+  async function setVisibility(visibility: 'ORG' | 'RESTRICTED') {
+    await api.updateProject(projectId, { visibility })
+    await load(tagFilter)
+  }
+
+  async function saveRestrictedAccess() {
+    await api.replaceProjectAccess(
+      projectId,
+      selectedGroupIds.map((id) => ({ type: 'GROUP' as const, id, permission: 'WRITE' as const })),
+    )
+    await load(tagFilter)
+  }
+
+  function renderTags(tags?: Tag[]) {
+    if (!tags?.length) return null
+    return (
+      <span className="meta">
+        {tags.map((t) => (
+          <span key={t.id} className="badge" style={{ marginRight: 4 }}>
+            {t.name}
+          </span>
+        ))}
+      </span>
+    )
   }
 
   if (!board && !error) return <p className="meta">Loading board…</p>
@@ -51,17 +104,87 @@ export function ProjectPage() {
   return (
     <div className="stack">
       <div>
-        <Link className="meta" to="/">← Projects</Link>
+        <Link className="meta" to="/">
+          ← Projects
+        </Link>
         <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', margin: '0.35rem 0' }}>{board.project.name}</h1>
         <p className="meta">{board.project.description}</p>
       </div>
+
+      <section className="panel stack">
+        <h2>Access & tags</h2>
+        <div className="actor-bar">
+          <label>
+            Visibility
+            <select
+              value={board.project.visibility}
+              onChange={(e) => void setVisibility(e.target.value as 'ORG' | 'RESTRICTED')}
+            >
+              <option value="ORG">Entire company</option>
+              <option value="RESTRICTED">Restricted</option>
+            </select>
+          </label>
+          <label>
+            Filter by tag
+            <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+              <option value="">All</option>
+              {(board.orgTags ?? []).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <form onSubmit={createTag} className="actor-bar">
+          <input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="New tag e.g. client-support" />
+          <button className="btn secondary" type="submit">
+            Add tag
+          </button>
+        </form>
+        {board.project.visibility === 'RESTRICTED' && (
+          <div className="stack">
+            <form onSubmit={createGroup} className="actor-bar">
+              <input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="New group name" />
+              <button className="btn secondary" type="submit">
+                Add group
+              </button>
+            </form>
+            <div className="list">
+              {groups.map((g) => {
+                const checked = selectedGroupIds.includes(g.id)
+                return (
+                  <label key={g.id} className="item" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        setSelectedGroupIds((prev) =>
+                          e.target.checked ? [...prev, g.id] : prev.filter((id) => id !== g.id),
+                        )
+                      }}
+                    />
+                    <span>{g.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+            <button className="btn secondary" type="button" onClick={() => void saveRestrictedAccess()}>
+              Save restricted access
+            </button>
+          </div>
+        )}
+      </section>
+
       <div className="grid">
         <section className="panel">
           <h2>Roadmap</h2>
           <div className="list">
             {board.roadmap.map((item) => (
               <div key={item.id} className="item">
-                <strong>{item.sequenceIndex + 1}. {item.title}</strong>
+                <strong>
+                  {item.sequenceIndex + 1}. {item.title}
+                </strong>
                 <span className="meta">{item.summary}</span>
               </div>
             ))}
@@ -72,12 +195,15 @@ export function ProjectPage() {
           <h2>Features</h2>
           <form onSubmit={addFeature} className="stack">
             <input value={featureTitle} onChange={(e) => setFeatureTitle(e.target.value)} placeholder="New feature title" />
-            <button className="btn secondary" type="submit">Add feature</button>
+            <button className="btn secondary" type="submit">
+              Add feature
+            </button>
           </form>
           <div className="list">
             {board.features.map((f) => (
               <Link key={f.id} className="item" to={`/features/${f.id}`}>
                 <strong>{f.title}</strong>
+                {renderTags(f.tags)}
                 <span className="meta">Updated {new Date(f.updatedAt).toLocaleString()}</span>
               </Link>
             ))}
@@ -87,13 +213,18 @@ export function ProjectPage() {
           <h2>Tasks</h2>
           <form onSubmit={addTask} className="stack">
             <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="New task title" />
-            <button className="btn secondary" type="submit">Add task</button>
+            <button className="btn secondary" type="submit">
+              Add task
+            </button>
           </form>
           <div className="list">
             {board.tasks.map((t) => (
               <div key={t.id} className="item">
                 <strong>{t.title}</strong>
-                <span className="meta"><span className="badge">{t.status}</span></span>
+                {renderTags(t.tags)}
+                <span className="meta">
+                  <span className="badge">{t.status}</span>
+                </span>
               </div>
             ))}
           </div>

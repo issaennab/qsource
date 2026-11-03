@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "respx>=0.21"]
 
 [project.scripts]
 qsource-mcp = "qsource_mcp.server:main"
