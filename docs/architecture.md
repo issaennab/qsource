@@ -1,4 +1,4 @@
-# Coord architecture (v1)
+# QSource architecture (v1)
 
 ## Revision model
 

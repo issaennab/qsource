@@ -1,8 +1,8 @@
-# Coord
+# QSource
 
-**Coord** is a lightweight product-planning and work-coordination platform for humans and AI coding agents.
+**QSource** is a lightweight product-planning and work-coordination platform for humans and AI coding agents.
 
-Instead of silently overwriting tickets in Notion/Jira, Coord stores **immutable revisions** of features and tasks. Each revision records the full snapshot, who made the change (human or agent), where it came from (`web` / `api` / `agent`), what changed, and which revision it was based on. Comments stay exploratory until you publish a revision.
+Instead of silently overwriting tickets in Notion/Jira, QSource stores **immutable revisions** of features and tasks. Each revision records the full snapshot, who made the change (human or agent), where it came from (`web` / `api` / `agent`), what changed, and which revision it was based on. Comments stay exploratory until you publish a revision.
 
 ## Who it's for
 
@@ -21,7 +21,7 @@ Solo builders and small product/engineering teams who want a shared source of tr
 ## Monorepo layout
 
 ```
-coord/
+qsource/
 ├── apps/web          # React web console
 ├── services/api      # Spring Boot API
 ├── docs/             # Architecture + API notes
@@ -37,7 +37,7 @@ coord/
 cd services/api
 ./gradlew bootRun
 # health: http://localhost:8095/actuator/health
-# seeded project: "Coord itself"
+# seeded project: "QSource itself"
 ```
 
 ### Web

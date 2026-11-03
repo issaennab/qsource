@@ -45,7 +45,7 @@ export function HomePage() {
       <form className="panel stack" onSubmit={createProject}>
         <label>
           New project
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Coord itself" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. QSource itself" />
         </label>
         <button className="btn" type="submit">Create</button>
       </form>

@@ -3,11 +3,11 @@ server:
 
 spring:
   application:
-    name: coord-api
+    name: qsource-api
   datasource:
-    url: ${COORD_DB_URL:jdbc:h2:file:./data/coord;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE}
-    username: ${COORD_DB_USER:sa}
-    password: ${COORD_DB_PASSWORD:}
+    url: ${QSOURCE_DB_URL:jdbc:h2:file:./data/qsource;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE}
+    username: ${QSOURCE_DB_USER:sa}
+    password: ${QSOURCE_DB_PASSWORD:}
     driver-class-name: org.h2.Driver
   jpa:
     hibernate:
@@ -27,5 +27,5 @@ management:
       exposure:
         include: health,info
 
-coord:
-  seed: ${COORD_SEED:true}
+qsource:
+  seed: ${QSOURCE_SEED:true}

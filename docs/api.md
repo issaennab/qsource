@@ -1,4 +1,4 @@
-# Coord HTTP API (v1)
+# QSource HTTP API (v1)
 
 Base URL local: `http://localhost:8095`
 

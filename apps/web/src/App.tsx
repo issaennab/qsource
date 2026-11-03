@@ -10,7 +10,7 @@ export default function App() {
     <BrowserRouter>
       <div className="app-shell">
         <header className="topbar">
-          <Link to="/" className="brand">Co<span>ord</span></Link>
+          <Link to="/" className="brand">Q<span>Source</span></Link>
           <ActorBar />
         </header>
         <Routes>
