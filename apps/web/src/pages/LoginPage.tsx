@@ -27,11 +27,13 @@ export function LoginPage() {
   }
 
   return (
-    <div className="stack" style={{ maxWidth: 420, margin: '2rem auto' }}>
-      <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', margin: 0 }}>Sign in</h1>
-      <p className="meta">Access your company’s projects in QSource.</p>
+    <div className="stack loose" style={{ maxWidth: 420, margin: '1rem auto' }}>
+      <div className="page-header">
+        <h1>Sign in</h1>
+        <p className="meta">Access your company’s projects in QSource.</p>
+      </div>
       {error && <p className="error">{error}</p>}
-      <form className="panel stack" onSubmit={onSubmit}>
+      <form className="panel stack tight" onSubmit={onSubmit}>
         <label>
           Email
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
@@ -40,7 +42,7 @@ export function LoginPage() {
           Password
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
         </label>
-        <button className="btn" type="submit" disabled={busy}>
+        <button className="btn block" type="submit" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>

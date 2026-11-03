@@ -35,7 +35,7 @@ export function AuthBar() {
           </select>
         </label>
       )}
-      <span className="meta">{user.displayName}</span>
+      <span className="user-chip">{user.displayName}</span>
       <button className="btn secondary" type="button" onClick={() => void logout()}>
         Sign out
       </button>

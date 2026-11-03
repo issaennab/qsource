@@ -52,28 +52,32 @@ export function HomePage() {
   }
 
   return (
-    <div className="stack">
-      <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', margin: 0 }}>Projects</h1>
-      <p className="meta">
-        {orgName ? `${orgName} — ` : ''}
-        Versioned roadmaps, features, and tasks — shared by humans and agents.
-      </p>
+    <div className="stack loose">
+      <div className="page-header">
+        <h1>Projects</h1>
+        <p className="meta">
+          {orgName ? `${orgName} — ` : ''}
+          Versioned roadmaps, features, and tasks — shared by humans and agents.
+        </p>
+      </div>
       {error && <p className="error">{error}</p>}
-      <form className="panel stack" onSubmit={createProject}>
-        <label>
-          New project
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. QSource itself" />
-        </label>
-        <label>
-          Visibility
-          <select value={visibility} onChange={(e) => setVisibility(e.target.value as 'ORG' | 'RESTRICTED')}>
-            <option value="ORG">Entire company</option>
-            <option value="RESTRICTED">Restricted (groups/members)</option>
-          </select>
-        </label>
-        <button className="btn" type="submit">
-          Create
-        </button>
+      <form className="panel stack tight" onSubmit={createProject}>
+        <div className="toolbar">
+          <label className="grow">
+            New project
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. QSource itself" />
+          </label>
+          <label>
+            Visibility
+            <select value={visibility} onChange={(e) => setVisibility(e.target.value as 'ORG' | 'RESTRICTED')}>
+              <option value="ORG">Entire company</option>
+              <option value="RESTRICTED">Restricted (groups/members)</option>
+            </select>
+          </label>
+          <button className="btn" type="submit">
+            Create
+          </button>
+        </div>
       </form>
       <div className="list">
         {loading && <p className="meta">Loading…</p>}

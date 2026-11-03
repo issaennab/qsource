@@ -34,11 +34,13 @@ export function SignupPage() {
   }
 
   return (
-    <div className="stack" style={{ maxWidth: 480, margin: '2rem auto' }}>
-      <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', margin: 0 }}>Create account</h1>
-      <p className="meta">Sign up creates your company workspace and makes you the owner.</p>
+    <div className="stack loose" style={{ maxWidth: 480, margin: '1rem auto' }}>
+      <div className="page-header">
+        <h1>Create account</h1>
+        <p className="meta">Sign up creates your company workspace and makes you the owner.</p>
+      </div>
       {error && <p className="error">{error}</p>}
-      <form className="panel stack" onSubmit={onSubmit}>
+      <form className="panel stack tight" onSubmit={onSubmit}>
         <label>
           Your name
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
@@ -61,7 +63,7 @@ export function SignupPage() {
           Company name
           <input value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} required />
         </label>
-        <button className="btn" type="submit" disabled={busy}>
+        <button className="btn block" type="submit" disabled={busy}>
           {busy ? 'Creating…' : 'Create company'}
         </button>
       </form>

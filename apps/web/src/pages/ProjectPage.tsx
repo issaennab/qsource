@@ -102,18 +102,18 @@ export function ProjectPage() {
   if (!board) return null
 
   return (
-    <div className="stack">
-      <div>
+    <div className="stack loose">
+      <div className="page-header">
         <Link className="meta" to="/">
           ← Projects
         </Link>
-        <h1 style={{ fontFamily: 'Fraunces, Georgia, serif', margin: '0.35rem 0' }}>{board.project.name}</h1>
+        <h1>{board.project.name}</h1>
         <p className="meta">{board.project.description}</p>
       </div>
 
-      <section className="panel stack">
+      <section className="panel stack tight">
         <h2>Access & tags</h2>
-        <div className="actor-bar">
+        <div className="toolbar">
           <label>
             Visibility
             <select
@@ -135,16 +135,25 @@ export function ProjectPage() {
               ))}
             </select>
           </label>
+          <form onSubmit={createTag} className="grow">
+            <label>
+              New tag
+              <div className="control-row">
+                <input
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  placeholder="e.g. client-support"
+                />
+                <button className="btn secondary" type="submit">
+                  Add tag
+                </button>
+              </div>
+            </label>
+          </form>
         </div>
-        <form onSubmit={createTag} className="actor-bar">
-          <input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="New tag e.g. client-support" />
-          <button className="btn secondary" type="submit">
-            Add tag
-          </button>
-        </form>
         {board.project.visibility === 'RESTRICTED' && (
           <div className="stack">
-            <form onSubmit={createGroup} className="actor-bar">
+            <form onSubmit={createGroup} className="control-row">
               <input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="New group name" />
               <button className="btn secondary" type="submit">
                 Add group
@@ -191,12 +200,12 @@ export function ProjectPage() {
             {board.roadmap.length === 0 && <p className="meta">No roadmap items yet.</p>}
           </div>
         </section>
-        <section className="panel stack">
+        <section className="panel stack tight">
           <h2>Features</h2>
-          <form onSubmit={addFeature} className="stack">
+          <form onSubmit={addFeature} className="control-row">
             <input value={featureTitle} onChange={(e) => setFeatureTitle(e.target.value)} placeholder="New feature title" />
             <button className="btn secondary" type="submit">
-              Add feature
+              Add
             </button>
           </form>
           <div className="list">
@@ -209,12 +218,12 @@ export function ProjectPage() {
             ))}
           </div>
         </section>
-        <section className="panel stack">
+        <section className="panel stack tight">
           <h2>Tasks</h2>
-          <form onSubmit={addTask} className="stack">
+          <form onSubmit={addTask} className="control-row">
             <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="New task title" />
             <button className="btn secondary" type="submit">
-              Add task
+              Add
             </button>
           </form>
           <div className="list">
@@ -223,7 +232,7 @@ export function ProjectPage() {
                 <strong>{t.title}</strong>
                 {renderTags(t.tags)}
                 <span className="meta">
-                  <span className="badge">{t.status}</span>
+                  <span className={`badge ${t.status.toLowerCase()}`}>{t.status.replace('_', ' ')}</span>
                 </span>
               </div>
             ))}
