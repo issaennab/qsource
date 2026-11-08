@@ -1,18 +1,37 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
-import { AuthBar } from './components/AuthBar'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { AppShell } from './components/AppShell'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { FeaturePage } from './pages/FeaturePage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { ProjectPage } from './pages/ProjectPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { SignupPage } from './pages/SignupPage'
+import { TaskPage } from './pages/TaskPage'
 import './styles/app.css'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  if (loading) return <p className="meta">Loading session…</p>
+  if (loading) return <p className="page-loading">Loading session…</p>
   if (!user) return <Navigate to="/login" replace />
   return <>{children}</>
+}
+
+function ShellLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireAuth>
+      <AppShell>{children}</AppShell>
+    </RequireAuth>
+  )
+}
+
+function ProjectRoute() {
+  const { projectId } = useParams()
+  return (
+    <ShellLayout>
+      <ProjectPage key={projectId} />
+    </ShellLayout>
+  )
 }
 
 function AppRoutes() {
@@ -23,25 +42,34 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          <RequireAuth>
+          <ShellLayout>
             <HomePage />
-          </RequireAuth>
+          </ShellLayout>
         }
       />
+      <Route path="/projects/:projectId" element={<ProjectRoute />} />
       <Route
-        path="/projects/:projectId"
+        path="/tasks/:taskId"
         element={
-          <RequireAuth>
-            <ProjectPage />
-          </RequireAuth>
+          <ShellLayout>
+            <TaskPage />
+          </ShellLayout>
         }
       />
       <Route
         path="/features/:featureId"
         element={
-          <RequireAuth>
+          <ShellLayout>
             <FeaturePage />
-          </RequireAuth>
+          </ShellLayout>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ShellLayout>
+            <SettingsPage />
+          </ShellLayout>
         }
       />
     </Routes>
@@ -52,15 +80,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="app-shell">
-          <header className="topbar">
-            <Link to="/" className="brand">
-              Q<span>Source</span>
-            </Link>
-            <AuthBar />
-          </header>
-          <AppRoutes />
-        </div>
+        <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
   )

@@ -4,6 +4,8 @@ import com.qsource.api.domain.*;
 import com.qsource.api.dto.Dtos.*;
 import com.qsource.api.repo.*;
 import com.qsource.api.security.AuthPrincipal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -170,7 +172,7 @@ public class ProjectService {
             features.add(toFeatureSummary(f));
         }
         List<TaskSummary> tasks = new ArrayList<>();
-        for (TaskItem t : taskItemRepository.findByProjectIdOrderByUpdatedAtDesc(projectId)) {
+        for (TaskItem t : taskItemRepository.findByProjectIdOrderByStatusAscSortOrderAscCreatedAtAsc(projectId)) {
             if (filterTaskIds != null && !filterTaskIds.contains(t.getId())) {
                 continue;
             }
@@ -275,14 +277,19 @@ public class ProjectService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Feature not in project");
             }
         }
+        TaskStatus status = request.status() == null ? TaskStatus.TODO : request.status();
         TaskItem task = new TaskItem();
         task.setProjectId(projectId);
         task.setFeatureId(request.featureId());
         task.setTitle(request.title());
-        task.setStatus(request.status() == null ? TaskStatus.TODO : request.status());
+        task.setDescription(request.description() == null ? "" : request.description());
+        task.setStatus(status);
+        task.setSortOrder(nextSortOrder(projectId, status));
+        task.setEstimatedDeliveryDate(request.estimatedDeliveryDate());
         task = taskItemRepository.save(task);
 
-        Map<String, Object> content = taskContent(request.title(), request.description(), task.getStatus());
+        Map<String, Object> content = taskContent(
+                request.title(), task.getDescription(), task.getStatus(), task.getEstimatedDeliveryDate());
         String message = request.changeMessage() == null || request.changeMessage().isBlank()
                 ? "Initial revision"
                 : request.changeMessage();
@@ -306,11 +313,19 @@ public class ProjectService {
     public TaskDetail publishTask(UUID taskId, PublishTaskRevisionRequest request) {
         TaskItem task = requireTask(taskId);
         accessService.requireProjectAccess(task.getProjectId(), true);
-        Map<String, Object> content = taskContent(request.title(), request.description(), request.status());
+        String description = request.description() == null ? "" : request.description();
+        LocalDate due = request.estimatedDeliveryDate() != null
+                ? request.estimatedDeliveryDate()
+                : task.getEstimatedDeliveryDate();
+        Map<String, Object> content = taskContent(request.title(), description, request.status(), due);
         Revision revision = revisionService.publish(
                 TargetType.TASK, task.getId(), task.getCurrentRevisionId(), content, request.changeMessage());
         task.setTitle(request.title());
+        task.setDescription(description);
         task.setStatus(request.status());
+        if (request.estimatedDeliveryDate() != null) {
+            task.setEstimatedDeliveryDate(request.estimatedDeliveryDate());
+        }
         task.setCurrentRevisionId(revision.getId());
         task.setUpdatedAt(revision.getCreatedAt());
         taskItemRepository.save(task);
@@ -327,6 +342,63 @@ public class ProjectService {
         TaskItem task = requireTask(taskId);
         accessService.requireProjectAccess(task.getProjectId(), false);
         return revisionService.history(TargetType.TASK, taskId).stream().map(this::toRevision).toList();
+    }
+
+    /**
+     * Move a ticket to another column and/or reorder within a column.
+     * Does not create a content revision — board placement is positional metadata.
+     */
+    @Transactional
+    public TaskDetail placeTask(UUID taskId, PlaceTaskRequest request) {
+        TaskItem task = requireTask(taskId);
+        accessService.requireProjectAccess(task.getProjectId(), true);
+        TaskStatus fromStatus = task.getStatus();
+        TaskStatus toStatus = request.status();
+        int targetIndex = Math.max(0, request.sortOrder());
+
+        List<TaskItem> column = new ArrayList<>(
+                taskItemRepository.findByProjectIdAndStatusOrderBySortOrderAscCreatedAtAsc(
+                        task.getProjectId(), toStatus));
+        column.removeIf(t -> t.getId().equals(task.getId()));
+        if (targetIndex > column.size()) {
+            targetIndex = column.size();
+        }
+        task.setStatus(toStatus);
+        task.setUpdatedAt(Instant.now());
+        column.add(targetIndex, task);
+        reindexColumn(column);
+
+        if (fromStatus != toStatus) {
+            List<TaskItem> oldColumn =
+                    taskItemRepository.findByProjectIdAndStatusOrderBySortOrderAscCreatedAtAsc(
+                            task.getProjectId(), fromStatus);
+            reindexColumn(oldColumn);
+            activityService.record(
+                    task.getProjectId(),
+                    "TASK_MOVED",
+                    "Moved " + task.getTitle() + " → " + toStatus.name().replace('_', ' ').toLowerCase(),
+                    task.getId());
+        }
+
+        Revision current =
+                task.getCurrentRevisionId() == null ? null : revisionService.require(task.getCurrentRevisionId());
+        return toTaskDetail(task, current);
+    }
+
+    private int nextSortOrder(UUID projectId, TaskStatus status) {
+        return taskItemRepository
+                .findByProjectIdAndStatusOrderBySortOrderAscCreatedAtAsc(projectId, status)
+                .size();
+    }
+
+    private void reindexColumn(List<TaskItem> column) {
+        for (int i = 0; i < column.size(); i++) {
+            TaskItem t = column.get(i);
+            if (t.getSortOrder() != i) {
+                t.setSortOrder(i);
+            }
+            taskItemRepository.save(t);
+        }
     }
 
     @Transactional
@@ -402,11 +474,15 @@ public class ProjectService {
         return map;
     }
 
-    private Map<String, Object> taskContent(String title, String description, TaskStatus status) {
+    private Map<String, Object> taskContent(
+            String title, String description, TaskStatus status, java.time.LocalDate estimatedDeliveryDate) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("title", title);
         map.put("description", description == null ? "" : description);
         map.put("status", status.name());
+        if (estimatedDeliveryDate != null) {
+            map.put("estimatedDeliveryDate", estimatedDeliveryDate.toString());
+        }
         return map;
     }
 
@@ -453,8 +529,12 @@ public class ProjectService {
                 t.getProjectId(),
                 t.getFeatureId(),
                 t.getTitle(),
+                t.getDescription() == null ? "" : t.getDescription(),
                 t.getStatus(),
+                t.getSortOrder(),
+                t.getEstimatedDeliveryDate(),
                 t.getCurrentRevisionId(),
+                t.getCreatedAt(),
                 t.getUpdatedAt(),
                 tagService.tagsFor(TargetType.TASK, t.getId()));
     }
@@ -466,9 +546,13 @@ public class ProjectService {
                 t.getProjectId(),
                 t.getFeatureId(),
                 t.getTitle(),
+                t.getDescription() == null ? "" : t.getDescription(),
                 t.getStatus(),
+                t.getSortOrder(),
+                t.getEstimatedDeliveryDate(),
                 t.getCurrentRevisionId(),
                 content,
+                t.getCreatedAt(),
                 t.getUpdatedAt(),
                 tagService.tagsFor(TargetType.TASK, t.getId()));
     }

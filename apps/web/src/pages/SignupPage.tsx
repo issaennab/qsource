@@ -34,42 +34,49 @@ export function SignupPage() {
   }
 
   return (
-    <div className="stack loose" style={{ maxWidth: 480, margin: '1rem auto' }}>
-      <div className="page-header">
-        <h1>Create account</h1>
-        <p className="meta">Sign up creates your company workspace and makes you the owner.</p>
+    <div className="auth-page">
+      <div className="auth-card stack">
+        <div>
+          <h1>Create account</h1>
+          <p className="muted">Creates your first workspace. You become the owner.</p>
+        </div>
+        {error && <p className="error">{error}</p>}
+        <form className="stack" onSubmit={onSubmit}>
+          <label>
+            Your name
+            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+          </label>
+          <label>
+            Email
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
+          </label>
+          <label>
+            Password
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              minLength={8}
+              required
+            />
+          </label>
+          <label>
+            Workspace name
+            <input
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              placeholder="e.g. Issa, Acme Studio, QSource"
+              required
+            />
+          </label>
+          <button className="btn primary" type="submit" disabled={busy} style={{ width: '100%' }}>
+            {busy ? 'Creating…' : 'Create workspace'}
+          </button>
+        </form>
+        <p className="muted">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </p>
       </div>
-      {error && <p className="error">{error}</p>}
-      <form className="panel stack tight" onSubmit={onSubmit}>
-        <label>
-          Your name
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
-        </label>
-        <label>
-          Work email
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
-        </label>
-        <label>
-          Password
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            minLength={8}
-            required
-          />
-        </label>
-        <label>
-          Company name
-          <input value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} required />
-        </label>
-        <button className="btn block" type="submit" disabled={busy}>
-          {busy ? 'Creating…' : 'Create company'}
-        </button>
-      </form>
-      <p className="meta">
-        Already have an account? <Link to="/login">Sign in</Link>
-      </p>
     </div>
   )
 }

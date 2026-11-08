@@ -1,0 +1,17 @@
+# Copy to application-local.yml (gitignored) for machine-specific overrides.
+# spring.config.import or rename + use: --spring.profiles.active=local
+
+spring:
+  config:
+    activate:
+      on-profile: local
+
+# Example: point local at a private DB without touching committed defaults.
+# spring:
+#   datasource:
+#     url: jdbc:postgresql://localhost:5432/qsource_dev
+#     username: qsource
+#     password: change-me
+
+qsource:
+  seed: true

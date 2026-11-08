@@ -41,4 +41,9 @@ public class TaskController {
     public CommentResponse addComment(@PathVariable UUID taskId, @Valid @RequestBody CreateCommentRequest request) {
         return projectService.addComment(TargetType.TASK, taskId, request);
     }
+
+    @PutMapping("/{taskId}/placement")
+    public TaskDetail place(@PathVariable UUID taskId, @Valid @RequestBody PlaceTaskRequest request) {
+        return projectService.placeTask(taskId, request);
+    }
 }

@@ -13,6 +13,10 @@ out/
 *.pem
 *.p12
 *.jks
+secrets/
+.private/
+**/application-local.yml
+!**/application-local.yml.example
 .idea/
 *.iml
 .vscode/

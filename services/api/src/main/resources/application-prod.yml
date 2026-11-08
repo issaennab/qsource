@@ -1,0 +1,32 @@
+# Activate with: --spring.profiles.active=prod
+# All secrets and connection values come from the environment — never commit real values.
+
+spring:
+  datasource:
+    url: ${QSOURCE_DB_URL}
+    username: ${QSOURCE_DB_USER}
+    password: ${QSOURCE_DB_PASSWORD}
+    driver-class-name: ${QSOURCE_DB_DRIVER:org.postgresql.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${QSOURCE_DDL_AUTO:validate}
+    open-in-view: false
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+qsource:
+  seed: false
+  jwt:
+    secret: ${QSOURCE_JWT_SECRET}
+    access-ttl-minutes: ${QSOURCE_JWT_ACCESS_TTL:60}
+    refresh-ttl-days: ${QSOURCE_JWT_REFRESH_TTL:30}

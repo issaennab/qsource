@@ -87,6 +87,7 @@ class QSourceClient:
         feature_id: str | None = None,
         description: str = "",
         status: str = "TODO",
+        estimated_delivery_date: str | None = None,
         change_message: str = "",
     ) -> Any:
         body: dict[str, Any] = {
@@ -97,6 +98,8 @@ class QSourceClient:
         }
         if feature_id is not None:
             body["featureId"] = feature_id
+        if estimated_delivery_date is not None:
+            body["estimatedDeliveryDate"] = estimated_delivery_date
         return self._request("POST", f"/api/projects/{project_id}/tasks", body)
 
     def list_feature_revisions(self, feature_id: str) -> Any:

@@ -41,8 +41,12 @@ export type TaskSummary = {
   projectId: string
   featureId?: string
   title: string
+  description?: string
   status: string
+  sortOrder: number
+  estimatedDeliveryDate?: string
   currentRevisionId?: string
+  createdAt: string
   updatedAt: string
   tags?: Tag[]
 }
@@ -206,6 +210,19 @@ export const api = {
   },
   me: () => request<{ user: User; organizations: OrgMembership[] }>('/api/me'),
   listOrgs: () => request<Org[]>('/api/orgs'),
+  createOrg: (body: { name: string }) =>
+    request<Org>('/api/orgs', { method: 'POST', body: JSON.stringify(body) }),
+  listOrgMembers: (orgId: string) =>
+    request<{ userId: string; email: string; displayName: string; role: string }[]>(
+      `/api/orgs/${orgId}/members`,
+    ),
+  addOrgMember: (orgId: string, body: { email: string; role: 'ADMIN' | 'MEMBER' }) =>
+    request<{ userId: string; email: string; displayName: string; role: string }>(
+      `/api/orgs/${orgId}/members`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  removeOrgMember: (orgId: string, userId: string) =>
+    request<void>(`/api/orgs/${orgId}/members/${userId}`, { method: 'DELETE' }),
   listOrgProjects: (orgId: string) => request<Project[]>(`/api/orgs/${orgId}/projects`),
   createOrgProject: (
     orgId: string,
@@ -269,9 +286,80 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  addRoadmapItem: (
+    projectId: string,
+    body: { title: string; summary?: string; sequenceIndex?: number; linkedFeatureId?: string },
+  ) =>
+    request<RoadmapItem>(`/api/projects/${projectId}/roadmap`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   createTask: (
     projectId: string,
-    body: { featureId?: string; title: string; description?: string; status?: string; changeMessage?: string },
+    body: {
+      featureId?: string
+      title: string
+      description?: string
+      status?: string
+      estimatedDeliveryDate?: string
+      changeMessage?: string
+    },
   ) =>
-    request(`/api/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),
+    request<TaskSummary>(`/api/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),
+  getTask: (id: string) =>
+    request<
+      TaskSummary & {
+        currentContent: {
+          title?: string
+          description?: string
+          status?: string
+          estimatedDeliveryDate?: string
+        }
+      }
+    >(`/api/tasks/${id}`),
+  publishTask: (
+    id: string,
+    body: {
+      title: string
+      description?: string
+      status: string
+      estimatedDeliveryDate?: string
+      changeMessage: string
+    },
+  ) =>
+    request<TaskSummary>(`/api/tasks/${id}/revisions`, { method: 'POST', body: JSON.stringify(body) }),
+  placeTask: (id: string, body: { status: string; sortOrder: number }) =>
+    request<TaskSummary>(`/api/tasks/${id}/placement`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  taskHistory: (id: string) => request<Revision[]>(`/api/tasks/${id}/revisions`),
+  taskComments: (id: string) => request<Comment[]>(`/api/tasks/${id}/comments`),
+  addTaskComment: (id: string, body: string) =>
+    request<Comment>(`/api/tasks/${id}/comments`, { method: 'POST', body: JSON.stringify({ body }) }),
+  setTaskTags: (taskId: string, tagIds: string[]) =>
+    request<Tag[]>(`/api/tasks/${taskId}/tags`, {
+      method: 'PUT',
+      body: JSON.stringify({ tagIds }),
+    }),
+  listApiKeys: (orgId: string) =>
+    request<ApiKeyInfo[]>(`/api/orgs/${orgId}/api-keys`),
+  createApiKey: (orgId: string, body: { name: string; projectId?: string }) =>
+    request<ApiKeyCreated>(`/api/orgs/${orgId}/api-keys`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  revokeApiKey: (orgId: string, keyId: string) =>
+    request<void>(`/api/orgs/${orgId}/api-keys/${keyId}`, { method: 'DELETE' }),
 }
+
+export type ApiKeyInfo = {
+  id: string
+  organizationId: string
+  projectId?: string
+  name: string
+  keyPrefix: string
+  createdAt: string
+}
+
+export type ApiKeyCreated = ApiKeyInfo & { apiKey: string }

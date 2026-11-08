@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -132,8 +133,12 @@ public final class Dtos {
             UUID projectId,
             UUID featureId,
             String title,
+            String description,
             TaskStatus status,
+            int sortOrder,
+            LocalDate estimatedDeliveryDate,
             UUID currentRevisionId,
+            Instant createdAt,
             Instant updatedAt,
             List<TagResponse> tags) {}
 
@@ -142,9 +147,13 @@ public final class Dtos {
             UUID projectId,
             UUID featureId,
             String title,
+            String description,
             TaskStatus status,
+            int sortOrder,
+            LocalDate estimatedDeliveryDate,
             UUID currentRevisionId,
             Map<String, Object> currentContent,
+            Instant createdAt,
             Instant updatedAt,
             List<TagResponse> tags) {}
 
@@ -153,13 +162,18 @@ public final class Dtos {
             @NotBlank String title,
             String description,
             TaskStatus status,
+            LocalDate estimatedDeliveryDate,
             String changeMessage) {}
 
     public record PublishTaskRevisionRequest(
             @NotBlank String title,
             String description,
             @NotNull TaskStatus status,
+            LocalDate estimatedDeliveryDate,
             @NotBlank String changeMessage) {}
+
+    /** Move a ticket across columns and/or reorder within a column. */
+    public record PlaceTaskRequest(@NotNull TaskStatus status, @NotNull Integer sortOrder) {}
 
     public record RevisionResponse(
             UUID id,

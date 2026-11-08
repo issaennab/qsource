@@ -9,12 +9,14 @@ import {
   type User,
 } from '../api/client'
 
+type RefreshOptions = { selectOrgId?: string }
+
 type AuthState = {
   user: User | null
   orgs: OrgMembership[]
   orgId: string | null
   loading: boolean
-  refresh: () => Promise<void>
+  refresh: (opts?: RefreshOptions) => Promise<void>
   setOrgId: (id: string) => void
   logout: () => Promise<void>
 }
@@ -27,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [orgId, setOrgIdState] = useState<string | null>(getSelectedOrgId())
   const [loading, setLoading] = useState(true)
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: RefreshOptions) => {
     if (!getAccessToken()) {
       setUser(null)
       setOrgs([])
@@ -38,12 +40,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await api.me()
       setUser(me.user)
       setOrgs(me.organizations)
+      const preferred = opts?.selectOrgId
       const existing = getSelectedOrgId()
-      const valid = me.organizations.some((o) => o.organizationId === existing)
-      const next = valid ? existing! : me.organizations[0]?.organizationId ?? null
-      if (next) {
-        setSelectedOrgId(next)
-        setOrgIdState(next)
+      const pick =
+        (preferred && me.organizations.some((o) => o.organizationId === preferred) && preferred) ||
+        (existing && me.organizations.some((o) => o.organizationId === existing) && existing) ||
+        me.organizations[0]?.organizationId ||
+        null
+      if (pick) {
+        setSelectedOrgId(pick)
+        setOrgIdState(pick)
+      } else {
+        setOrgIdState(null)
       }
     } catch {
       clearSession()

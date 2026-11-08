@@ -66,9 +66,9 @@ Add under Cursor MCP settings (`~/.cursor/mcp.json`, or project MCP settings). U
 
 ### Smoke check
 
-1. Start API; sign in on web as `demo@qsource.local` / `demo1234` (seeded).
-2. Create an API key for the demo org.
-3. Configure MCP with that key; call `list_projects`, then `create_feature`.
+1. Start API; sign in as `issa@qsource.io` / `demo1234`.
+2. Create an API key: `POST /api/orgs/{orgId}/api-keys` (owner/admin).
+3. Configure MCP with that key; call `list_projects`, then `create_feature` / `create_task`.
 
 ### Troubleshooting
 
